@@ -1,0 +1,172 @@
+--Select all records from the table:
+
+SELECT * FROM real_estate_data;
+
+
+--Count the total number of records in the dataset:
+
+SELECT COUNT(*) AS total_records FROM real_estate_data;
+
+
+--Find the average assessed value:
+
+SELECT AVG("Assessed Value") AS avg_assessed_value FROM real_estate_data;
+
+
+--Find the maximum sale amount:
+
+SELECT MAX("Sale Amount") AS max_sale_amount FROM real_estate_data;
+
+
+--Find the minimum sales ratio:
+
+SELECT MIN("Sales Ratio") AS min_sales_ratio FROM real_estate_data;
+
+
+--Filter records for a specific town (e.g., Ansonia):
+
+SELECT * FROM real_estate_data WHERE Town = 'Ansonia';
+
+
+--Filter records for residential properties:
+
+SELECT * FROM real_estate_data WHERE "Property Type" = 'Residential';
+
+
+--Calculate the total assessed value and total sale amount for residential properties:
+
+SELECT 
+    SUM("Assessed Value") AS total_assessed_value,
+    SUM("Sale Amount") AS total_sale_amount 
+FROM real_estate_data 
+WHERE "Property Type" = 'Residential';
+
+
+--Find the year with the highest number of recorded sales:
+
+SELECT 
+    List_Year, 
+    COUNT(*) AS num_sales 
+FROM real_estate_data 
+GROUP BY List_Year 
+ORDER BY num_sales DESC 
+LIMIT 1;
+
+
+--Find the town with the highest average sales ratio among residential properties:
+
+SELECT 
+    Town,
+    AVG("Sales Ratio") AS avg_sales_ratio
+FROM real_estate_data
+WHERE "Property Type" = 'Residential'
+GROUP BY Town
+ORDER BY avg_sales_ratio DESC
+LIMIT 1;
+
+
+--Identify properties in towns where the average assessed value is above the overall average assessed value:
+
+SELECT *
+FROM real_estate_data AS red
+WHERE red.Town IN (
+    SELECT Town
+    FROM real_estate_data
+    GROUP BY Town
+    HAVING AVG("Assessed Value") > (
+        SELECT AVG("Assessed Value")
+        FROM real_estate_data
+    )
+);
+
+
+--Find properties that were sold for more than the average sale amount in their respective towns:
+
+SELECT *
+FROM real_estate_data AS red
+WHERE "Sale Amount" > (
+    SELECT AVG("Sale Amount")
+    FROM real_estate_data
+    WHERE Town = red.Town
+);
+
+
+--Calculate the percentage of residential properties in each town:
+
+SELECT 
+    Town,
+    (COUNT(CASE WHEN "Property Type" = 'Residential' THEN 1 END) * 100.0) / COUNT(*) AS residential_percentage
+FROM real_estate_data
+GROUP BY Town;
+
+
+--Identify towns where the total assessed value of commercial properties exceeds the total assessed value of residential properties:
+
+SELECT 
+    Town
+FROM (
+    SELECT 
+        Town,
+        SUM(CASE WHEN "Property Type" = 'Residential' THEN "Assessed Value" ELSE 0 END) AS residential_assessment,
+        SUM(CASE WHEN "Property Type" = 'Commercial' THEN "Assessed Value" ELSE 0 END) AS commercial_assessment
+    FROM real_estate_data
+    GROUP BY Town
+) AS assessment_summary
+WHERE commercial_assessment > residential_assessment;
+
+Find the top 5 towns with the highest average sales ratio, considering only properties sold for more than their assessed value:
+
+
+SELECT 
+    Town,
+    AVG("Sales Ratio") AS avg_sales_ratio
+FROM real_estate_data
+WHERE "Sale Amount" > "Assessed Value"
+GROUP BY Town
+ORDER BY avg_sales_ratio DESC
+LIMIT 5;
+
+
+--Identify properties where the sales amount is within 10% of the assessed value:
+
+SELECT *
+FROM real_estate_data
+WHERE ABS("Sale Amount" - "Assessed Value") <= 0.1 * "Assessed Value";
+
+
+--Calculate the difference between the average sale amount of residential properties and the overall average sale amount:
+
+SELECT 
+    AVG(CASE WHEN "Property Type" = 'Residential' THEN "Sale Amount" END) AS avg_residential_sale_amount,
+    AVG("Sale Amount") AS avg_overall_sale_amount,
+    AVG(CASE WHEN "Property Type" = 'Residential' THEN "Sale Amount" END) - AVG("Sale Amount") AS sale_amount_difference
+FROM real_estate_data;
+
+
+--Find the town with the highest average assessed value per property type:
+
+SELECT 
+    Town,
+    "Property Type",
+    AVG("Assessed Value") AS avg_assessed_value
+FROM real_estate_data
+GROUP BY Town, "Property Type"
+ORDER BY avg_assessed_value DESC
+LIMIT 1;
+
+
+--Identify properties sold in the same year they were listed:
+
+SELECT *
+FROM real_estate_data
+WHERE EXTRACT(YEAR FROM "Date Recorded") = EXTRACT(YEAR FROM "List Year");
+
+
+--Calculate the average sales ratio for each year:
+
+SELECT 
+    EXTRACT(YEAR FROM "Date Recorded") AS year,
+    AVG("Sales Ratio") AS avg_sales_ratio
+FROM real_estate_data
+GROUP BY year
+ORDER BY year;
